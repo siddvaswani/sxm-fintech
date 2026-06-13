@@ -1,0 +1,19 @@
+# Tool-local config (per Sidd's convention — never commit)
+.claude/
+.superpowers/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
+
+# Build output
+dist/
+build/
+.next/
