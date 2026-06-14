@@ -2,11 +2,11 @@
 
 > What's built, what's not, what's in progress, known issues. Update at the end of every session.
 
-_Last updated: 2026-06-14 — Part 1 (app scaffold) complete._
+_Last updated: 2026-06-14 — Part 2 (recipient setup) complete._
 
 ## Phase
 
-**Phase 2 — building, part by part.** Part 1 of 6 done. App scaffolds, type-checks, and builds clean.
+**Phase 2 — building, part by part.** Parts 1–2 of 6 done. App type-checks and builds clean.
 
 ## What this project is
 
@@ -33,10 +33,16 @@ initiates/routes; the test wallets settle.
   + `dotenv` + `server-only` installed; **`lib/payments/client.ts`** (the single authenticated
   Open Payments client, with teaching comments); **`.env.example`**; `.gitignore` hardened
   (`.env`, `*.key`). `npx tsc --noEmit` ✅ and `npm run build` ✅.
+- ✅ **Part 2 — `feat/02-recipient-setup`:** **`lib/payments/amounts.ts`** (pure `toMinorUnits` /
+  `fromMinorUnits`, string-based money math) and **`lib/payments/incoming.ts`**
+  (`setupIncomingPayment` → resolves receiver wallet, requests a non-interactive incoming-payment
+  grant via `isFinalizedGrantWithAccessToken`, creates the incoming payment with the receiver's
+  *dynamic* currency, returns the incoming payment `id`). Currency-agnostic. tsc ✅, build ✅.
+  Demo model = **invoice-style / fixed receive amount**: B's incoming payment fixes how much B
+  receives in B's currency; Part 3's quote derives what A must pay (incl. FX + fee).
 
 ## NOT built yet
 
-- ❌ Part 2 `feat/02-recipient-setup` — incoming-payment grant + create (Business B)
 - ❌ Part 3 `feat/03-quote-and-fx` — quote grant + create; expose fee/rate/amounts
 - ❌ Part 4 `feat/04-consent-redirect` — interactive grant + `/callback` + `grant.continue`
 - ❌ Part 5 `feat/05-send-payment` — outgoing payment create + receipt
@@ -46,10 +52,11 @@ initiates/routes; the test wallets settle.
 
 ## ▶️ Pick up here (next action)
 
-Start **Part 2 — `feat/02-recipient-setup`**: in `lib/payments/incoming.ts`, request an
-incoming-payment grant on the RECEIVER's auth server, then `incomingPayment.create` on its resource
-server. Exact verified calls are in the spec (§5, Step 1). Returns the incoming payment `id` that
-Part 3's quote will point at.
+Start **Part 3 — `feat/03-quote-and-fx`**: in `lib/payments/quote.ts`, request a non-interactive
+**quote** grant on the SENDER's auth server, then `quote.create({ method: 'ilp', walletAddress:
+senderId, receiver: incomingPaymentId })`. The quote returns `debitAmount` (what A pays, sender
+currency) and `receiveAmount` (what B gets, receiver currency) — the **FX + fee** to surface before
+confirm. Use `fromMinorUnits` to display them. Exact verified calls in the spec (§5, Step 2).
 
 ## Known issues / risks
 
