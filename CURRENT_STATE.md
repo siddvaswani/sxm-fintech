@@ -2,11 +2,11 @@
 
 > What's built, what's not, what's in progress, known issues. Update at the end of every session.
 
-_Last updated: 2026-06-14 — Part 3 (quote + FX) complete._
+_Last updated: 2026-06-14 — Parts 3 (quote + FX) and 4 (consent redirect) complete._
 
 ## Phase
 
-**Phase 2 — building, part by part.** Parts 1–3 of 6 done. App type-checks and builds clean.
+**Phase 2 — building, part by part.** Parts 1–4 of 6 done. App type-checks and builds clean.
 
 ## What this project is
 
@@ -50,10 +50,25 @@ initiates/routes; the test wallets settle.
   currency; cross-currency the cost story is the rate (no fee is faked). Currency-agnostic —
   asset code/scale read live. Re-verified against the live OP `grant-quote` + `quote-create`
   snippets: signatures unchanged. tsc ✅, build ✅.
+- ✅ **Part 4 — `feat/04-consent-redirect`:** **`lib/payments/outgoing-grant.ts`** —
+  `requestOutgoingGrant` (resolves the sender wallet, requests the **INTERACTIVE**
+  outgoing-payment grant with `interact.start: ['redirect']` + `finish.{method,uri,nonce}` and a
+  spend `limits.debitAmount`, guards with `isPendingGrant`, returns the browser `redirectUrl` +
+  the `continue` token/uri + nonce to stash) and `continueOutgoingGrant` (extracts `interact_ref`
+  from the returned url, calls `grant.continue`, guards with `isFinalizedGrantWithAccessToken`,
+  returns the finalized access token for Part 5; carries a hardening TODO to verify the returned
+  `hash`). The `debitAmount` is **passed in as a typed param** — NOT imported from Part 3's
+  `quote.ts` — so the two parts stay decoupled. **`lib/payments/redirect-state.ts`** — a minimal
+  in-memory, nonce-keyed server-side stash for the cross-redirect state (`continue.*`, nonce,
+  quote id, sender wallet); the app's only persistence, POC-only. **`app/callback/route.ts`** —
+  App Router GET handler the test wallet redirects back to; parses `interact_ref`, looks up the
+  stashed state by nonce, and (when present) finishes the grant. Callback base configurable via
+  `APP_BASE_URL`, defaulting to `http://localhost:3000`. Live SDK re-verified against the
+  official `snippets/node/grant` (`grant.ts` + `grant-continuation.ts`) — matches the spec
+  exactly. tsc ✅, build ✅.
 
 ## NOT built yet
 
-- ❌ Part 4 `feat/04-consent-redirect` — interactive grant + `/callback` + `grant.continue`
 - ❌ Part 5 `feat/05-send-payment` — outgoing payment create + receipt
 - ❌ Part 6 `feat/06-ui-wire-up` — the 3 clickable screens incl. the confirm-before-send step
 - ❌ `SETUP.md` (wallet + key walkthrough)
@@ -61,15 +76,11 @@ initiates/routes; the test wallets settle.
 
 ## ▶️ Pick up here (next action)
 
-Start **Part 4 — `feat/04-consent-redirect`**: this is the INTERACTIVE step. In a new module
-(e.g. `lib/payments/authorize.ts`), request an **outgoing-payment** grant on the SENDER's auth
-server with `interact: { start: ['redirect'], finish: { method: 'redirect', uri:
-'http://localhost:3000/callback', nonce } }` and `limits.debitAmount` set from the Part 3 quote's
-`debitAmount`. Guard with `isPendingGrant`. Add an `app/callback` route that reads
-`interact_ref` from the return URL and calls `client.grant.continue(...)`, guarded by
-`isFinalizedGrantWithAccessToken`. Carry `quote.id` + `grant.continue.*` + sender wallet across the
-redirect **server-side only** (signed cookie or in-memory keyed by nonce — never the browser).
-Exact verified calls in the spec (§5, Step 3 + 3b).
+Next is **Part 5 — `feat/05-send-payment`**: with the **finalized access token** returned by
+`continueOutgoingGrant` (Part 4) and the **quote id** stashed in `redirect-state.ts`, call
+`outgoingPayment.create({ url: senderWallet.resourceServer, accessToken }, { walletAddress:
+senderId, quoteId })` and build the receipt (outgoing payment id + both amounts). Exact verified
+calls in the spec (§5, Step 4).
 
 ## Known issues / risks
 
