@@ -2,7 +2,7 @@
 
 > What's built, what's not, what's in progress, known issues. Update at the end of every session.
 
-_Last updated: 2026-06-14 — Part 2 (recipient setup) complete._
+_Last updated: 2026-06-14 — Part 4 (consent redirect) complete._
 
 ## Phase
 
@@ -40,11 +40,26 @@ initiates/routes; the test wallets settle.
   *dynamic* currency, returns the incoming payment `id`). Currency-agnostic. tsc ✅, build ✅.
   Demo model = **invoice-style / fixed receive amount**: B's incoming payment fixes how much B
   receives in B's currency; Part 3's quote derives what A must pay (incl. FX + fee).
+- ✅ **Part 4 — `feat/04-consent-redirect`:** **`lib/payments/outgoing-grant.ts`** —
+  `requestOutgoingGrant` (resolves the sender wallet, requests the **INTERACTIVE**
+  outgoing-payment grant with `interact.start: ['redirect']` + `finish.{method,uri,nonce}` and a
+  spend `limits.debitAmount`, guards with `isPendingGrant`, returns the browser `redirectUrl` +
+  the `continue` token/uri + nonce to stash) and `continueOutgoingGrant` (extracts `interact_ref`
+  from the returned url, calls `grant.continue`, guards with `isFinalizedGrantWithAccessToken`,
+  returns the finalized access token for Part 5; carries a hardening TODO to verify the returned
+  `hash`). The `debitAmount` is **passed in as a typed param** — NOT imported from Part 3's
+  `quote.ts` — so the two parts stay decoupled. **`lib/payments/redirect-state.ts`** — a minimal
+  in-memory, nonce-keyed server-side stash for the cross-redirect state (`continue.*`, nonce,
+  quote id, sender wallet); the app's only persistence, POC-only. **`app/callback/route.ts`** —
+  App Router GET handler the test wallet redirects back to; parses `interact_ref`, looks up the
+  stashed state by nonce, and (when present) finishes the grant. Callback base configurable via
+  `APP_BASE_URL`, defaulting to `http://localhost:3000`. Live SDK re-verified against the
+  official `snippets/node/grant` (`grant.ts` + `grant-continuation.ts`) — matches the spec
+  exactly. tsc ✅, build ✅.
 
 ## NOT built yet
 
 - ❌ Part 3 `feat/03-quote-and-fx` — quote grant + create; expose fee/rate/amounts
-- ❌ Part 4 `feat/04-consent-redirect` — interactive grant + `/callback` + `grant.continue`
 - ❌ Part 5 `feat/05-send-payment` — outgoing payment create + receipt
 - ❌ Part 6 `feat/06-ui-wire-up` — the 3 clickable screens incl. the confirm-before-send step
 - ❌ `SETUP.md` (wallet + key walkthrough)
@@ -52,11 +67,15 @@ initiates/routes; the test wallets settle.
 
 ## ▶️ Pick up here (next action)
 
-Start **Part 3 — `feat/03-quote-and-fx`**: in `lib/payments/quote.ts`, request a non-interactive
-**quote** grant on the SENDER's auth server, then `quote.create({ method: 'ilp', walletAddress:
-senderId, receiver: incomingPaymentId })`. The quote returns `debitAmount` (what A pays, sender
-currency) and `receiveAmount` (what B gets, receiver currency) — the **FX + fee** to surface before
-confirm. Use `fromMinorUnits` to display them. Exact verified calls in the spec (§5, Step 2).
+Next is **Part 5 — `feat/05-send-payment`**: with the **finalized access token** returned by
+`continueOutgoingGrant` (Part 4) and the **quote id** stashed in `redirect-state.ts`, call
+`outgoingPayment.create({ url: senderWallet.resourceServer, accessToken }, { walletAddress:
+senderId, quoteId })` and build the receipt (outgoing payment id + both amounts). Exact verified
+calls in the spec (§5, Step 4).
+
+(Part 3 — `feat/03-quote-and-fx` — is being built in parallel on its own branch: quote grant +
+`quote.create`, exposing `debitAmount`/`receiveAmount` + fee/rate. Part 4 takes that `debitAmount`
+as a typed parameter, so the two merge cleanly.)
 
 ## Known issues / risks
 
