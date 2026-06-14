@@ -2,49 +2,59 @@
 
 > What's built, what's not, what's in progress, known issues. Update at the end of every session.
 
-_Last updated: 2026-06-13 (desktop session — handoff to laptop)_
+_Last updated: 2026-06-14 — Part 1 (app scaffold) complete._
 
 ## Phase
 
-**Phase 1 — plan approved, ready to build.** No app code yet. The full design is locked and committed.
+**Phase 2 — building, part by part.** Part 1 of 6 done. App scaffolds, type-checks, and builds clean.
 
-## What this project is now (scope defined this session)
+## What this project is
 
-A **proof of concept for a grant application**: a cross-border B2B payment over **Open Payments** on the Interledger **test** wallet (test money only). Business A → Business B, **cross-currency**, showing the **fee + exchange rate before the user confirms**. Platform **never custodies funds** — it only initiates/routes; the test wallets settle.
+A **proof of concept for a grant application**: a cross-border B2B payment over **Open Payments** on
+the Interledger **test** wallet (test money only). Business A → Business B, cross-currency, showing the
+**fee + exchange rate before the user confirms**. Platform **never custodies funds** — it only
+initiates/routes; the test wallets settle.
 
 ## Decisions locked
 
-- **Stack:** Next.js (App Router) + TypeScript. SDK: `@interledger/open-payments` (7.x).
-- **Currency:** target **USD → XCG (Caribbean Guilder)**, but app is **currency-agnostic** (reads asset code/scale dynamically) because XCG availability on the test wallet is **unconfirmed**. Falls back to EUR/MXN with zero code change.
-- **Custody:** no ledger/balance/funds module anywhere; `lib/payments/` is the only OP-touching layer; private key server-side only.
-- **Build style:** one branch per part, merged to `main` with a plain-English summary each time.
-- **Credentials:** user will create the test wallets + key later and plug them in (`.env`). No live run possible until then.
+- **Stack:** Next.js 16 (App Router, Turbopack) + React 19 + TypeScript + Tailwind 4. SDK
+  `@interledger/open-payments` 7.4.0. Node 22.
+- **Currency:** target USD → XCG; app is currency-agnostic (reads asset code/scale dynamically),
+  falls back to EUR/MXN if XCG isn't offered by the test wallet.
+- **Custody:** no ledger/balance/funds module anywhere; `lib/payments/` is the only OP-touching layer;
+  private key server-side only (enforced with `server-only`).
+- **Build style:** one branch per part, merged to `main` (`--no-ff`) with a plain-English summary.
 
 ## Built so far
 
-- ✅ Repo + Phase 0 docs (CLAUDE.md, ARCHITECTURE.md, CURRENT_STATE.md, .gitignore)
-- ✅ Pushed to GitHub: `github.com/siddvaswani/sxm-fintech` (private, `main`)
-- ✅ **Approved design spec:** `docs/specs/2026-06-13-cross-border-payment-poc-design.md` — contains the **verified Open Payments flow with exact SDK calls** (pulled from official `interledger/open-payments` Node snippets, not memory). This is the build bible.
-- ✅ Business folder exists: `~/Documents/Projects/Sxm Fintech/`
+- ✅ Repo + Phase 0 docs, pushed to `github.com/siddvaswani/sxm-fintech` (private, `main`)
+- ✅ **Approved design spec:** `docs/specs/2026-06-13-cross-border-payment-poc-design.md` (verified OP flow + exact SDK calls)
+- ✅ **Part 1 — `feat/01-app-scaffold`:** Next.js app merged into repo; `@interledger/open-payments`
+  + `dotenv` + `server-only` installed; **`lib/payments/client.ts`** (the single authenticated
+  Open Payments client, with teaching comments); **`.env.example`**; `.gitignore` hardened
+  (`.env`, `*.key`). `npx tsc --noEmit` ✅ and `npm run build` ✅.
 
 ## NOT built yet
 
-- ❌ The Next.js app (no `feat/01-app-scaffold` branch yet)
-- ❌ Any of the 6 build parts (see spec §8)
-- ❌ `.env.example`, `SETUP.md`
-- ❌ Test-wallet accounts + developer key (user creates these)
+- ❌ Part 2 `feat/02-recipient-setup` — incoming-payment grant + create (Business B)
+- ❌ Part 3 `feat/03-quote-and-fx` — quote grant + create; expose fee/rate/amounts
+- ❌ Part 4 `feat/04-consent-redirect` — interactive grant + `/callback` + `grant.continue`
+- ❌ Part 5 `feat/05-send-payment` — outgoing payment create + receipt
+- ❌ Part 6 `feat/06-ui-wire-up` — the 3 clickable screens incl. the confirm-before-send step
+- ❌ `SETUP.md` (wallet + key walkthrough)
+- ❌ Test-wallet accounts + developer key (user creates these; no live run until then)
 
-## ▶️ Pick up here on the laptop (next actions, in order)
+## ▶️ Pick up here (next action)
 
-1. **Pull latest `main`** (`git pull`) — the spec + docs are there.
-2. **Re-fetch live docs** (`openpayments.dev` + `github.com/interledger/open-payments/snippets/node`) to confirm nothing changed since 2026-06-13, then trust the snippets captured in the spec.
-3. Read `docs/specs/2026-06-13-cross-border-payment-poc-design.md` end-to-end — it has every API call.
-4. Start **`feat/01-app-scaffold`**: scaffold Next.js + TS, add `.env.example`, write `lib/payments/client.ts` (the authenticated client), add the Custody Model note to ARCHITECTURE.md.
-5. Proceed through parts 2→6 (spec §8), branch per part, merge to main, update this file after each.
-6. Resolve the two open setup choices (spec §11): XCG-vs-fallback, and 2-wallet vs 3-wallet setup.
+Start **Part 2 — `feat/02-recipient-setup`**: in `lib/payments/incoming.ts`, request an
+incoming-payment grant on the RECEIVER's auth server, then `incomingPayment.create` on its resource
+server. Exact verified calls are in the spec (§5, Step 1). Returns the incoming payment `id` that
+Part 3's quote will point at.
 
 ## Known issues / risks
 
-- **XCG may not exist on the test wallet** — mitigated by currency-agnostic design; confirm at wallet-creation time.
-- **No end-to-end verification yet** — first real run requires the user's credentials (`SETUP.md` will guide it).
-- Interactive consent step redirects the browser to the test wallet and back via `/callback` — expected, not a bug.
+- **XCG may not exist on the test wallet** — mitigated by currency-agnostic design; confirm at setup.
+- **No end-to-end verification yet** — first real run needs the user's credentials (`SETUP.md` later).
+- Interactive consent step (Part 4) redirects the browser to the test wallet and back — expected.
+- `npm audit` reports a couple of moderate advisories from the Next toolchain — noted, not addressed
+  in this POC (test-only, no production concern).
