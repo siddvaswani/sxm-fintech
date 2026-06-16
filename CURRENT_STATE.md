@@ -2,11 +2,12 @@
 
 > What's built, what's not, what's in progress, known issues. Update at the end of every session.
 
-_Last updated: 2026-06-16 — Part 5 (send payment + receipt) complete._
+_Last updated: 2026-06-16 — Part 6 (UI wire-up) complete; all 6 build parts done._
 
 ## Phase
 
-**Phase 2 — building, part by part.** Parts 1–5 of 6 done. App type-checks and builds clean.
+**Phase 2 — build complete.** All 6 of 6 parts done. App type-checks, builds, and renders clean.
+Only `SETUP.md` + the user's first live run remain.
 
 ## What this project is
 
@@ -80,27 +81,41 @@ initiates/routes; the test wallets settle.
   the receipt (`stage: 'payment-created'`); otherwise it stops at `grant-finalized` as before
   (full nonce plumbing lands in Part 6). Re-verified against the live OP
   `create-outgoing-payment` snippet — signature unchanged. tsc ✅, build ✅.
+- ✅ **Part 6 — `feat/06-ui-wire-up`:** the **3 screens** + the 2 API routes that tie the lib
+  layer together, plus the callback nonce plumbing. **`app/page.tsx`** (client) = Start + Review
+  in one component (quote held in React state): Start enters the amount B receives →
+  `POST /api/quote`; Review shows debit/receive + rate + fee → `POST /api/send`. **`app/api/quote/
+  route.ts`** runs Part 2 (`setupIncomingPayment`) → Part 3 (`createQuote`), returns `QuoteResult`.
+  **`app/api/send/route.ts`** runs Part 4 (`requestOutgoingGrant`), stashes `quoteId` +
+  `senderWalletUrl` via `saveRedirectState`, returns the wallet `redirectUrl` (browser navigates
+  there to approve). **`app/result/page.tsx`** (server) = the receipt; `/callback` now redirects
+  here with the receipt as **base64url JSON in `?r=`** (stateless, refresh-safe — no new store).
+  **Nonce plumbing:** `outgoing-grant.ts` `callbackUri(nonce)` now puts `?nonce=` on the
+  `finish.uri`, so the wallet returns it on the callback URL and the stash lookup works. Routes
+  read `SENDER`/`RECEIVER` wallet addresses from env; errors surface as readable messages.
+  `layout.tsx` title fixed. Smoke-tested on dev server: Start renders, Result renders (with + without
+  a receipt). The app's only server state is still the one nonce-keyed redirect stash. tsc ✅, build
+  ✅ (routes: `/`, `/api/quote`, `/api/send`, `/callback`, `/result`).
 
 ## NOT built yet
 
-- ❌ Part 6 `feat/06-ui-wire-up` — the 3 clickable screens incl. the confirm-before-send step
-- ❌ `SETUP.md` (wallet + key walkthrough)
+- ❌ `SETUP.md` (wallet + key walkthrough) — the only remaining task
 - ❌ Test-wallet accounts + developer key (user creates these; no live run until then)
 
 ## ▶️ Pick up here (next action)
 
-Next is **Part 6 — `feat/06-ui-wire-up`** (the last build part): the **3 screens** that tie the
-lib layer together — (1) Start: "Business A pays Business B," enter/confirm amount → calls Part 2
-(`setupIncomingPayment`) + Part 3 (`createQuote`); (2) **Review quote**: show debit/receive + FX +
-fee, [Confirm & Send] → calls Part 4 (`requestOutgoingGrant`), **stashes `quoteId` +
-`senderWalletUrl` via `saveRedirectState`**, and appends the **nonce** to the outbound redirect so
-`/callback` can match it; (3) Result: the receipt from Part 5 (`payment-created`). This is also
-where the callback's nonce plumbing gets fully wired (see the WIRING NOTE in `app/callback/route.ts`).
-Screens per spec §6. Then last: `SETUP.md` + final `CURRENT_STATE.md`.
+**All 6 build parts are done.** What's left is non-code-by-Claude: write **`SETUP.md`** — a
+screenshot-level walkthrough to create, at `wallet.interledger-test.dev`: (1) a key pair (→ `KEY_ID`
++ `private.key` → `PRIVATE_KEY_PATH`), (2) the platform/client wallet (`CLIENT_WALLET_ADDRESS`),
+(3) Business A = USD (`SENDER_WALLET_ADDRESS`), (4) Business B = XCG if offered else EUR/MXN
+(`RECEIVER_WALLET_ADDRESS`) — confirm XCG availability here (spec §11). Then Sidd fills `.env`, runs
+`npm run dev`, and does the **first live end-to-end run** (the only thing never verified yet). Note
+the 2-wallet vs 3-wallet choice (spec §7) — default to simpler 2-wallet (client = sender) if short
+on time.
 
 _Resuming on another Mac:_ ALWAYS `git fetch --all` + `git pull --ff-only` on `main` FIRST (this
-repo is edited from two Macs and the local copy silently drifts), run `npm install`, then start
-Part 6 on a new branch `feat/06-ui-wire-up`. Parts 1–5 are on `main` as of 2026-06-16. No live run
+repo is edited from two Macs and the local copy silently drifts), run `npm install`, then continue
+with `SETUP.md` (no new branch needed — or use `docs/SETUP.md`). Parts 1–6 are on `main` as of 2026-06-16. No live run
 yet — that needs the two test wallets + dev key in `.env` (`SETUP.md`, built last).
 
 ## Known issues / risks
