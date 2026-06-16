@@ -82,6 +82,10 @@ Next is **Part 5 — `feat/05-send-payment`**: with the **finalized access token
 senderId, quoteId })` and build the receipt (outgoing payment id + both amounts). Exact verified
 calls in the spec (§5, Step 4).
 
+_Resuming on another Mac:_ `git pull` on `main`, run `npm install`, then start Part 5 on a new
+branch `feat/05-send-payment`. Parts 1–4 are pushed and on `main` as of 2026-06-16. No live run yet
+— that needs the two test wallets + dev key in `.env` (`SETUP.md`, built last).
+
 ## Known issues / risks
 
 - **XCG may not exist on the test wallet** — mitigated by currency-agnostic design; confirm at setup.
