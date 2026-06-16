@@ -27,6 +27,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getOpenPaymentsClient } from '@/lib/payments/client'
 import { continueOutgoingGrant } from '@/lib/payments/outgoing-grant'
+import { createOutgoingPayment } from '@/lib/payments/outgoing'
 import {
   getRedirectState,
   clearRedirectState,
@@ -81,20 +82,50 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     url.toString(),
   )
 
-  // One-time use: drop the stashed state now that the grant is finalized.
+  // --- Part 5 — send the payment ----------------------------------------------------------
+  // To actually create the outgoing payment we need two things from the stashed state: the
+  // quote id (the locked-in price) and the sender's wallet url (who pays). Part 4 stashes
+  // these as OPTIONAL fields, and the full nonce-plumbing that guarantees they're present is
+  // wired in Part 6. So we branch honestly: if both are here, send for real and return a
+  // receipt; if not, stop at "grant-finalized" exactly as before, without pretending we sent.
+  if (state.quoteId && state.senderWalletUrl) {
+    const receipt = await createOutgoingPayment(
+      client,
+      state.senderWalletUrl,
+      accessToken,
+      state.quoteId,
+    )
+
+    // One-time use: drop the stashed state now that the payment is created.
+    clearRedirectState(state.nonce)
+
+    // The receipt for Part 6's Result screen — real amounts read back from the wallet.
+    return NextResponse.json({
+      ok: true,
+      stage: 'payment-created',
+      interactRef,
+      receipt,
+      message: receipt.failed
+        ? 'Grant approved, but the outgoing payment is marked failed by the wallet.'
+        : `Sent. Business A paid ${receipt.display.debit} ${receipt.debitAmount.assetCode}; ` +
+          `Business B receives ${receipt.display.receive} ${receipt.receiveAmount.assetCode}.`,
+    })
+  }
+
+  // No quote id / sender wallet stashed yet (Part 4 in isolation, or pre-Part-6 plumbing):
+  // the grant is genuinely finalized, we just don't have what we need to send. Drop the
+  // state and report the honest stage rather than faking a payment.
   clearRedirectState(state.nonce)
 
-  // Part 5 (feat/05-send-payment) takes this finalized token + the stashed quote id and
-  // calls outgoingPayment.create. For now we confirm the grant finished. We do NOT echo
-  // the raw token in a real UI; this is a POC server response, not a browser page.
+  // We do NOT echo the raw token in a real UI; this is a POC server response, not a page.
   return NextResponse.json({
     ok: true,
     stage: 'grant-finalized',
     interactRef,
     quoteId: state.quoteId ?? null,
     message:
-      'Sender approved. Outgoing-payment grant finalized; access token obtained. ' +
-      'Part 5 uses this token + the quote id to create the outgoing payment.',
+      'Sender approved. Outgoing-payment grant finalized; access token obtained. To send, ' +
+      'the stashed state also needs quoteId + senderWalletUrl (wired fully in Part 6).',
     // Length only, never the secret itself — just proof we got a usable token.
     accessTokenLength: accessToken.length,
   })
