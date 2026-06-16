@@ -99,17 +99,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // One-time use: drop the stashed state now that the payment is created.
     clearRedirectState(state.nonce)
 
-    // The receipt for Part 6's Result screen — real amounts read back from the wallet.
-    return NextResponse.json({
-      ok: true,
-      stage: 'payment-created',
-      interactRef,
-      receipt,
-      message: receipt.failed
-        ? 'Grant approved, but the outgoing payment is marked failed by the wallet.'
-        : `Sent. Business A paid ${receipt.display.debit} ${receipt.debitAmount.assetCode}; ` +
-          `Business B receives ${receipt.display.receive} ${receipt.receiveAmount.assetCode}.`,
-    })
+    // Part 6 — show the Result screen. We carry the receipt to /result IN THE URL (base64url
+    // encoded JSON) rather than a server store: the receipt isn't secret (amounts + payment
+    // id), and this keeps the result page stateless and refresh-safe. `redirect` needs an
+    // absolute URL, so we build it from this request's own origin.
+    const encoded = Buffer.from(JSON.stringify(receipt)).toString('base64url')
+    const resultUrl = new URL('/result', request.nextUrl.origin)
+    resultUrl.searchParams.set('r', encoded)
+    return NextResponse.redirect(resultUrl)
   }
 
   // No quote id / sender wallet stashed yet (Part 4 in isolation, or pre-Part-6 plumbing):

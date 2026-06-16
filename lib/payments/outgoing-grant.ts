@@ -54,9 +54,16 @@ export interface PendingOutgoingGrant {
 // still works if the dev server runs elsewhere, but fall back to the spec's default.
 // (`??` is "use the right side only if the left is null/undefined" — like Python's
 //  `os.environ.get('APP_BASE_URL') or 'http://localhost:3000'`.)
-function callbackUri(): string {
+//
+// Part 6 wiring: we put the `nonce` ON this callback url (`/callback?nonce=...`). When the
+// wallet redirects the browser back it APPENDS its own params (`&interact_ref=...&hash=...`),
+// so /callback receives both — the nonce lets it look up the server-side state we stashed,
+// and interact_ref lets it finish the grant. Building it with `URL` handles the encoding.
+function callbackUri(nonce: string): string {
   const base = process.env.APP_BASE_URL ?? 'http://localhost:3000'
-  return `${base}/callback`
+  const url = new URL('/callback', base)
+  url.searchParams.set('nonce', nonce)
+  return url.toString()
 }
 
 /**
@@ -106,10 +113,10 @@ export async function requestOutgoingGrant(
         // `start: ['redirect']` = begin approval by sending the browser somewhere.
         start: ['redirect'],
         // `finish` = how the wallet returns control: redirect the browser to our
-        // /callback url, carrying the nonce so we can match it back up.
+        // /callback url (which now carries the nonce so we can match it back up).
         finish: {
           method: 'redirect',
-          uri: callbackUri(),
+          uri: callbackUri(nonce),
           nonce,
         },
       },
