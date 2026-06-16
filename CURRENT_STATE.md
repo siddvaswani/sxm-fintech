@@ -2,11 +2,11 @@
 
 > What's built, what's not, what's in progress, known issues. Update at the end of every session.
 
-_Last updated: 2026-06-14 — Parts 3 (quote + FX) and 4 (consent redirect) complete._
+_Last updated: 2026-06-16 — Part 5 (send payment + receipt) complete._
 
 ## Phase
 
-**Phase 2 — building, part by part.** Parts 1–4 of 6 done. App type-checks and builds clean.
+**Phase 2 — building, part by part.** Parts 1–5 of 6 done. App type-checks and builds clean.
 
 ## What this project is
 
@@ -66,25 +66,42 @@ initiates/routes; the test wallets settle.
   `APP_BASE_URL`, defaulting to `http://localhost:3000`. Live SDK re-verified against the
   official `snippets/node/grant` (`grant.ts` + `grant-continuation.ts`) — matches the spec
   exactly. tsc ✅, build ✅.
+- ✅ **Part 5 — `feat/05-send-payment`:** **`lib/payments/outgoing.ts`** (`createOutgoingPayment` →
+  resolves the SENDER's wallet, then calls `client.outgoingPayment.create({ url:
+  sender.resourceServer, accessToken }, { walletAddress: sender.id, quoteId })` using the
+  **finalized token from Part 4** + the **quote id from Part 3** — money moves here). Binds the
+  payment to the **quote id** (not raw amounts) so the charge can't differ from the confirm
+  screen; single beat (no grant request — Part 4 already got the token). Returns a clean
+  `PaymentReceipt`: outgoing payment **`id`**, `failed` flag, `receiver`, `createdAt`, and all
+  three amounts (`debitAmount` / `receiveAmount` / **`sentAmount`**) as `{ value, assetCode,
+  assetScale }`, plus a `display` block (human debit/receive/sent via `fromMinorUnits` +
+  "Sent"/"Failed" status). Currency-agnostic. **`app/callback/route.ts`** extended: after the
+  grant finalizes, if the stash has `quoteId` + `senderWalletUrl` it sends for real and returns
+  the receipt (`stage: 'payment-created'`); otherwise it stops at `grant-finalized` as before
+  (full nonce plumbing lands in Part 6). Re-verified against the live OP
+  `create-outgoing-payment` snippet — signature unchanged. tsc ✅, build ✅.
 
 ## NOT built yet
 
-- ❌ Part 5 `feat/05-send-payment` — outgoing payment create + receipt
 - ❌ Part 6 `feat/06-ui-wire-up` — the 3 clickable screens incl. the confirm-before-send step
 - ❌ `SETUP.md` (wallet + key walkthrough)
 - ❌ Test-wallet accounts + developer key (user creates these; no live run until then)
 
 ## ▶️ Pick up here (next action)
 
-Next is **Part 5 — `feat/05-send-payment`**: with the **finalized access token** returned by
-`continueOutgoingGrant` (Part 4) and the **quote id** stashed in `redirect-state.ts`, call
-`outgoingPayment.create({ url: senderWallet.resourceServer, accessToken }, { walletAddress:
-senderId, quoteId })` and build the receipt (outgoing payment id + both amounts). Exact verified
-calls in the spec (§5, Step 4).
+Next is **Part 6 — `feat/06-ui-wire-up`** (the last build part): the **3 screens** that tie the
+lib layer together — (1) Start: "Business A pays Business B," enter/confirm amount → calls Part 2
+(`setupIncomingPayment`) + Part 3 (`createQuote`); (2) **Review quote**: show debit/receive + FX +
+fee, [Confirm & Send] → calls Part 4 (`requestOutgoingGrant`), **stashes `quoteId` +
+`senderWalletUrl` via `saveRedirectState`**, and appends the **nonce** to the outbound redirect so
+`/callback` can match it; (3) Result: the receipt from Part 5 (`payment-created`). This is also
+where the callback's nonce plumbing gets fully wired (see the WIRING NOTE in `app/callback/route.ts`).
+Screens per spec §6. Then last: `SETUP.md` + final `CURRENT_STATE.md`.
 
-_Resuming on another Mac:_ `git pull` on `main`, run `npm install`, then start Part 5 on a new
-branch `feat/05-send-payment`. Parts 1–4 are pushed and on `main` as of 2026-06-16. No live run yet
-— that needs the two test wallets + dev key in `.env` (`SETUP.md`, built last).
+_Resuming on another Mac:_ ALWAYS `git fetch --all` + `git pull --ff-only` on `main` FIRST (this
+repo is edited from two Macs and the local copy silently drifts), run `npm install`, then start
+Part 6 on a new branch `feat/06-ui-wire-up`. Parts 1–5 are on `main` as of 2026-06-16. No live run
+yet — that needs the two test wallets + dev key in `.env` (`SETUP.md`, built last).
 
 ## Known issues / risks
 
