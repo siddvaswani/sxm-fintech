@@ -2,12 +2,17 @@
 
 > What's built, what's not, what's in progress, known issues. Update at the end of every session.
 
-_Last updated: 2026-06-16 — Part 6 (UI wire-up) complete; all 6 build parts done._
+_Last updated: 2026-06-17 — ✅ FIRST LIVE END-TO-END RUN SUCCEEDED. Real USD→EUR payment settled on both wallets._
 
 ## Phase
 
-**Phase 2 — build complete.** All 6 of 6 parts done. App type-checks, builds, and renders clean.
-Only `SETUP.md` + the user's first live run remain.
+**Phase 3 — VERIFIED LIVE. 🎉** All 6 build parts done AND proven with a real run on the Interledger
+test wallet (2026-06-17): Business A (USD) paid Business B (EUR), quote→approve→send→settle, money
+moved on both accounts. Test sent: B receives €10.00 → A pays $11.54 (rate 1 USD = 0.866551 EUR;
+cross-currency fee shown as 0.00 by design — cost is in the rate). The platform held no funds.
+**One real fix was needed to run live** (see Known issues). Remaining work is non-code: grant demo
+capture + writeup (grant app v1 already drafted by Sidd). `SETUP.md` is now OPTIONAL (Sidd did the
+wallet setup live with Claude instead of from a doc).
 
 ## What this project is
 
@@ -97,31 +102,48 @@ initiates/routes; the test wallets settle.
   a receipt). The app's only server state is still the one nonce-keyed redirect stash. tsc ✅, build
   ✅ (routes: `/`, `/api/quote`, `/api/send`, `/callback`, `/result`).
 
-## NOT built yet
+## NOT built yet (code)
 
-- ❌ `SETUP.md` (wallet + key walkthrough) — the only remaining task
-- ❌ Test-wallet accounts + developer key (user creates these; no live run until then)
+- Nothing required. The app is built AND verified live. `SETUP.md` is now OPTIONAL (wallet setup was
+  done live, not from a doc) — write it only if the grant submission wants a reproducible walkthrough.
+
+## Live setup actually used (2026-06-17)
+
+- **2-wallet setup** (spec §7 default): the platform/client IS Business A (its key signs).
+- Wallets on `wallet.interledger-test.dev` (one login, two accounts):
+  `SENDER`/`CLIENT` = `https://ilp.interledger-test.dev/business-a` (USD),
+  `RECEIVER` = `https://ilp.interledger-test.dev/business-b` (EUR — **XCG NOT offered** by the test
+  wallet, EUR fallback; currency-agnostic design meant zero code change).
+- Credentials live in `.env` (gitignored) + `private.key` PEM file at repo root (gitignored). Dev key
+  generated on `business-a`. Business A funded with test USD (note: the wallet charges a simulated
+  deposit fee — unrelated to the app).
+- **Verified behaviors (not bugs):** cross-currency **fee displays 0.00** (cost is in the rate, by
+  design — no faked fee); **"settled so far" reads 0.00** on the receipt because `sentAmount` is read
+  the instant the outgoing payment is created (settlement is async — confirmed both balances moved
+  after).
 
 ## ▶️ Pick up here (next action)
 
-**All 6 build parts are done.** What's left is non-code-by-Claude: write **`SETUP.md`** — a
-screenshot-level walkthrough to create, at `wallet.interledger-test.dev`: (1) a key pair (→ `KEY_ID`
-+ `private.key` → `PRIVATE_KEY_PATH`), (2) the platform/client wallet (`CLIENT_WALLET_ADDRESS`),
-(3) Business A = USD (`SENDER_WALLET_ADDRESS`), (4) Business B = XCG if offered else EUR/MXN
-(`RECEIVER_WALLET_ADDRESS`) — confirm XCG availability here (spec §11). Then Sidd fills `.env`, runs
-`npm run dev`, and does the **first live end-to-end run** (the only thing never verified yet). Note
-the 2-wallet vs 3-wallet choice (spec §7) — default to simpler 2-wallet (client = sender) if short
-on time.
+**Code phase is DONE and proven.** Next is grant work (Sidd's, non-code): capture a demo
+recording/screenshots of the working USD→EUR flow, and finish the grant writeup (app v1 drafted).
+**Deadline: 2026-06-30** (Open Payments Accelerator). Optional code polish if time: the `hash`
+verification TODO in `app/callback/route.ts`; a dedicated 3rd "platform" wallet for the cleaner
+no-custody story (spec §7, 3-wallet).
 
-_Resuming on another Mac:_ ALWAYS `git fetch --all` + `git pull --ff-only` on `main` FIRST (this
-repo is edited from two Macs and the local copy silently drifts), run `npm install`, then continue
-with `SETUP.md` (no new branch needed — or use `docs/SETUP.md`). Parts 1–6 are on `main` as of 2026-06-16. No live run
-yet — that needs the two test wallets + dev key in `.env` (`SETUP.md`, built last).
+_Resuming on another Mac:_ ALWAYS `git fetch --all` + `git pull --ff-only` on `main` FIRST (two-Mac
+repo, local drifts), run `npm install`. **Note: `.env` + `private.key` are gitignored and do NOT sync
+via GitHub** — the other Mac needs its own `.env` + a private key (either re-copy the files out of
+band, or generate a fresh dev key on `business-a` in the test wallet). Parts 1–6 + the live-run fix
+are on `main` as of 2026-06-17.
 
 ## Known issues / risks
 
-- **XCG may not exist on the test wallet** — mitigated by currency-agnostic design; confirm at setup.
-- **No end-to-end verification yet** — first real run needs the user's credentials (`SETUP.md` later).
-- Interactive consent step (Part 4) redirects the browser to the test wallet and back — expected.
+- **`next.config.ts` must keep `serverExternalPackages: ['@interledger/open-payments']`** — without it
+  the SDK's runtime YAML spec reads break under Turbopack bundling (`ENOENT /ROOT/.../*.yaml`). This
+  was THE fix that made the live run work. Don't remove it.
+- A brief "internal server error" can flash on the **test wallet's** side during the approval→callback
+  redirect; our app logs were clean (quote 200, send 200, callback 307, result 200). Cosmetic/upstream.
+- **XCG not on the test wallet** — using EUR; currency-agnostic design absorbed it with no code change.
+- `.env`/`private.key` are machine-local (gitignored) — not synced across the two Macs.
 - `npm audit` reports a couple of moderate advisories from the Next toolchain — noted, not addressed
   in this POC (test-only, no production concern).
