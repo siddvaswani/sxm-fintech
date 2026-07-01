@@ -4,8 +4,10 @@
 
 ## Status
 
-Design **approved 2026-06-13**, not yet built. Full detail (with verified API calls) lives in
-`docs/specs/2026-06-13-cross-border-payment-poc-design.md`. This file is the durable summary.
+Design **approved 2026-06-13**; **built and verified live 2026-06-17** — a real cross-currency
+payment (USD → EUR) settled end-to-end on the Interledger test network. Full detail (with verified
+API calls) lives in `docs/specs/2026-06-13-cross-border-payment-poc-design.md`. This file is the
+durable summary.
 
 ## What it is
 
