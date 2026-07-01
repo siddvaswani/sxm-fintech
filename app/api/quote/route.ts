@@ -23,7 +23,7 @@ function requireEnv(name: string): string {
   const value = process.env[name]
   if (!value) {
     throw new Error(
-      `Missing required environment variable: ${name}. Copy .env.example to .env (see SETUP.md).`,
+      `Missing required environment variable: ${name}. Copy .env.example to .env (see README.md).`,
     )
   }
   return value
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (err) {
     // Surface a readable message (e.g. missing .env, or the test wallet rejecting a request)
     // instead of a stack trace. Until the user adds real credentials, this is the expected
-    // path — there's no live run without the wallets + key (built in SETUP.md, last).
+    // path — there's no live run without the wallets + key (setup steps in README.md).
     const message = err instanceof Error ? err.message : 'Unexpected error creating the quote.'
     return NextResponse.json({ ok: false, message }, { status: 500 })
   }

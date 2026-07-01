@@ -23,7 +23,7 @@ function requireEnv(name: string): string {
   const value = process.env[name]
   if (!value) {
     throw new Error(
-      `Missing required environment variable: ${name}. Copy .env.example to .env (see SETUP.md).`,
+      `Missing required environment variable: ${name}. Copy .env.example to .env (see README.md).`,
     )
   }
   return value

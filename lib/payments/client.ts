@@ -31,7 +31,7 @@ function requireEnv(name: string): string {
   if (!value) {
     throw new Error(
       `Missing required environment variable: ${name}. ` +
-        `Copy .env.example to .env and fill it in (see SETUP.md).`,
+        `Copy .env.example to .env and fill it in (see README.md).`,
     )
   }
   return value
