@@ -33,3 +33,6 @@ next-env.d.ts
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Local project instructions for Claude Code (keep local, do not publish)
+CLAUDE.md
