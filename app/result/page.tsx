@@ -13,6 +13,7 @@
 
 import Link from 'next/link'
 import type { PaymentReceipt } from '@/lib/payments/outgoing'
+import { Shell, Figure, Row, btnPrimary } from '@/app/_components/ui'
 
 // Decode the receipt from the URL. Returns null if it's missing or malformed (e.g. someone
 // opened /result directly) so we can show a friendly fallback instead of crashing.
@@ -33,73 +34,93 @@ export default async function ResultPage({
   const { r } = await searchParams
   const receipt = decodeReceipt(r)
 
+  // Empty state — page opened directly, or the receipt was malformed. Teach the interface
+  // rather than showing a bare error.
+  if (!receipt) {
+    return (
+      <Shell step={0}>
+        <div className="animate-in mt-6 text-center">
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-line bg-surface-2 text-faint">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+              <path d="M5 7h10M5 11h10M5 15h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <rect x="3.25" y="3.25" width="13.5" height="13.5" rx="2.5" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+          </div>
+          <h1 className="mt-4 text-xl font-semibold tracking-tight text-ink">No receipt yet</h1>
+          <p className="mx-auto mt-1.5 max-w-xs text-[0.8125rem] leading-relaxed text-muted">
+            This screen shows the result of a payment. Start one to see the receipt here.
+          </p>
+          <Link href="/" className={`${btnPrimary} mt-6`}>
+            Start a payment
+          </Link>
+        </div>
+      </Shell>
+    )
+  }
+
+  const failed = receipt.failed
+
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 p-6 dark:bg-black">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        {!receipt ? (
-          // No (or bad) receipt — e.g. the page was opened directly. Offer a way back.
-          <>
-            <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-              No receipt to show
-            </h1>
-            <p className="mt-2 text-sm text-zinc-500">
-              This page shows the result of a payment. Start one from the home screen.
-            </p>
-            <Link
-              href="/"
-              className="mt-6 inline-block rounded-lg bg-zinc-900 px-4 py-2 font-medium text-white hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              Start a payment
-            </Link>
-          </>
-        ) : (
-          <>
-            <div className="text-3xl">{receipt.failed ? '❌' : '✅'}</div>
-            <h1 className="mt-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-              {receipt.failed ? 'Payment failed' : 'Payment sent'}
-            </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {receipt.failed
-                ? 'The wallet marked this outgoing payment as failed.'
-                : 'Business A’s wallet created the outgoing payment and the funds are settling.'}
-            </p>
+    <Shell step={3}>
+      <div className="animate-in mt-6">
+        {/* Status crest — icon + word, so color is never the only signal. */}
+        <div className="flex flex-col items-center text-center">
+          <div
+            className={[
+              'flex h-12 w-12 items-center justify-center rounded-full',
+              failed ? 'bg-danger-dim text-danger' : 'bg-success-dim text-success',
+            ].join(' ')}
+          >
+            {failed ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+          <h1 className="mt-3.5 text-xl font-semibold tracking-tight text-ink">
+            {failed ? 'Payment failed' : 'Payment sent'}
+          </h1>
+          <p className="mt-1.5 max-w-xs text-[0.8125rem] leading-relaxed text-muted">
+            {failed
+              ? 'The wallet marked this outgoing payment as failed.'
+              : 'Business A’s wallet created the outgoing payment. Funds are settling on the network.'}
+          </p>
+        </div>
 
-            <dl className="mt-6 space-y-3 rounded-xl bg-zinc-50 p-4 text-sm dark:bg-zinc-900">
-              <div className="flex items-center justify-between">
-                <dt className="text-zinc-500">Business A paid</dt>
-                <dd className="font-semibold text-zinc-900 dark:text-zinc-50">
-                  {receipt.display.debit} {receipt.debitAmount.assetCode}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-zinc-500">Business B receives</dt>
-                <dd className="font-semibold text-zinc-900 dark:text-zinc-50">
-                  {receipt.display.receive} {receipt.receiveAmount.assetCode}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-zinc-500">Settled so far</dt>
-                <dd className="text-zinc-700 dark:text-zinc-300">
-                  {receipt.display.sent} {receipt.sentAmount.assetCode}
-                </dd>
-              </div>
-            </dl>
+        <dl className="mt-6 rounded-xl border border-line bg-surface-2 px-4 py-1.5">
+          <Row label="Business A paid">
+            <Figure value={receipt.display.debit} code={receipt.debitAmount.assetCode} size="lg" />
+          </Row>
+          <Row label="Business B receives">
+            <Figure value={receipt.display.receive} code={receipt.receiveAmount.assetCode} size="lg" />
+          </Row>
+          <Row label="Settled so far" divider>
+            <Figure
+              value={receipt.display.sent}
+              code={receipt.sentAmount.assetCode}
+              tone={failed ? 'muted' : 'success'}
+            />
+          </Row>
+        </dl>
 
-            {/* The canonical proof the payment exists. `break-all` keeps the long URL tidy. */}
-            <p className="mt-4 text-xs text-zinc-400">Outgoing payment ID</p>
-            <p className="break-all font-mono text-xs text-zinc-600 dark:text-zinc-400">
-              {receipt.id}
-            </p>
+        {/* Canonical proof the payment exists — the on-network payment id. */}
+        <div className="mt-4 rounded-xl border border-line bg-surface-2 px-4 py-3">
+          <p className="text-[0.6875rem] font-medium uppercase tracking-wider text-faint">
+            Outgoing payment ID
+          </p>
+          <p className="tnum mt-1 break-all text-[0.75rem] leading-relaxed text-muted">
+            {receipt.id}
+          </p>
+        </div>
 
-            <Link
-              href="/"
-              className="mt-6 inline-block rounded-lg bg-zinc-900 px-4 py-2 font-medium text-white hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              Make another payment
-            </Link>
-          </>
-        )}
+        <Link href="/" className={`${btnPrimary} mt-6`}>
+          Make another payment
+        </Link>
       </div>
-    </main>
+    </Shell>
   )
 }

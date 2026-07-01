@@ -17,6 +17,7 @@
 
 import { useState } from 'react'
 import type { QuoteResult } from '@/lib/payments/quote'
+import { Shell, Figure, Row, btnPrimary, btnGhost } from '@/app/_components/ui'
 
 // Which screen we're showing. A small string union is TypeScript's version of an enum.
 type Step = 'start' | 'review'
@@ -71,102 +72,149 @@ export default function Home() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center bg-zinc-50 p-6 dark:bg-black">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <p className="text-xs font-medium uppercase tracking-widest text-zinc-400">
-          Cross-border payment
-        </p>
-        <h1 className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-          Business A pays Business B
-        </h1>
+    <Shell step={step === 'start' ? 0 : 1}>
+      {/* The two parties, stated once so the whole flow reads as A → B. */}
+      <div className="flex items-center gap-3 text-[0.8125rem]">
+        <div className="flex min-w-0 flex-col">
+          <span className="font-medium text-ink">Business A</span>
+          <span className="text-[0.6875rem] uppercase tracking-wide text-faint">Sender</span>
+        </div>
+        <div className="h-px min-w-2 flex-1 bg-line" />
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden className="shrink-0 text-accent">
+          <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <div className="h-px min-w-2 flex-1 bg-line" />
+        <div className="flex min-w-0 flex-col text-right">
+          <span className="font-medium text-ink">Business B</span>
+          <span className="text-[0.6875rem] uppercase tracking-wide text-faint">Receiver</span>
+        </div>
+      </div>
 
-        {error && (
-          <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
-            {error}
+      {error && (
+        <div
+          role="alert"
+          className="mt-5 flex items-start gap-2 rounded-xl bg-danger-dim px-3.5 py-2.5 text-[0.8125rem] text-danger"
+        >
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden className="mt-0.5 shrink-0">
+            <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M8 5v3.5M8 11h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {step === 'start' && (
+        <div key="start" className="animate-in mt-6">
+          <h1 className="text-xl font-semibold tracking-tight text-ink text-balance">
+            Send a cross-border payment
+          </h1>
+          <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-muted">
+            Enter what Business B should receive. You&apos;ll see the exact cost, rate, and fee
+            before you confirm.
           </p>
-        )}
 
-        {step === 'start' && (
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
-              Amount Business B receives
-              <span className="ml-1 font-normal text-zinc-400">(in B&apos;s currency)</span>
-            </label>
+          <label
+            htmlFor="amount"
+            className="mt-6 block text-[0.6875rem] font-medium uppercase tracking-wider text-muted"
+          >
+            Amount Business B receives
+          </label>
+          <div className="relative mt-2">
             <input
+              id="amount"
               type="number"
               inputMode="decimal"
               min="0"
               step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="10.00"
-              className="mt-2 w-full rounded-lg border border-zinc-300 px-3 py-2 text-lg text-zinc-900 outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-100"
-            />
-            <button
-              onClick={getQuote}
-              disabled={loading || !amount}
-              className="mt-5 w-full rounded-lg bg-zinc-900 px-4 py-3 font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              {loading ? 'Getting quote…' : 'Get quote'}
-            </button>
-          </div>
-        )}
-
-        {step === 'review' && quote && (
-          <div className="mt-6">
-            {/* The FX moment: real numbers from the quote, shown before the user commits. */}
-            <dl className="space-y-3 rounded-xl bg-zinc-50 p-4 text-sm dark:bg-zinc-900">
-              <div className="flex items-center justify-between">
-                <dt className="text-zinc-500">You send</dt>
-                <dd className="font-semibold text-zinc-900 dark:text-zinc-50">
-                  {quote.display.debit} {quote.debitAmount.assetCode}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-zinc-500">Business B receives</dt>
-                <dd className="font-semibold text-zinc-900 dark:text-zinc-50">
-                  {quote.display.receive} {quote.receiveAmount.assetCode}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between border-t border-zinc-200 pt-3 dark:border-zinc-800">
-                <dt className="text-zinc-500">Exchange rate</dt>
-                <dd className="text-zinc-700 dark:text-zinc-300">
-                  1 {quote.debitAmount.assetCode} = {quote.display.exchangeRate}{' '}
-                  {quote.receiveAmount.assetCode}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-zinc-500">Fee</dt>
-                <dd className="text-zinc-700 dark:text-zinc-300">
-                  {quote.display.feeValue} {quote.debitAmount.assetCode}
-                </dd>
-              </div>
-            </dl>
-
-            <button
-              onClick={confirmAndSend}
-              disabled={loading}
-              className="mt-5 w-full rounded-lg bg-zinc-900 px-4 py-3 font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-            >
-              {loading ? 'Redirecting to approve…' : 'Confirm & Send'}
-            </button>
-            <button
-              onClick={() => {
-                setStep('start')
-                setError(null)
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && amount && !loading) getQuote()
               }}
-              disabled={loading}
-              className="mt-2 w-full rounded-lg px-4 py-2 text-sm text-zinc-500 hover:text-zinc-800 disabled:opacity-50 dark:hover:text-zinc-200"
-            >
-              Cancel
-            </button>
+              placeholder="0.00"
+              className="focusable tnum w-full rounded-xl border border-line bg-surface-2 px-3.5 py-3 text-2xl font-semibold tabular-nums text-ink placeholder:text-faint"
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-[0.6875rem] uppercase tracking-wide text-faint">
+              B&apos;s currency
+            </span>
           </div>
-        )}
 
-        <p className="mt-6 text-center text-xs text-zinc-400">
-          Test money only · Interledger test wallet · the platform never holds funds
-        </p>
-      </div>
-    </main>
+          <button onClick={getQuote} disabled={loading || !amount} className={`${btnPrimary} mt-5`}>
+            {loading ? (
+              <>
+                <Spinner /> Getting quote
+              </>
+            ) : (
+              'Get quote'
+            )}
+          </button>
+        </div>
+      )}
+
+      {step === 'review' && quote && (
+        <div key="review" className="animate-in mt-6">
+          <h1 className="text-xl font-semibold tracking-tight text-ink text-balance">
+            Review the quote
+          </h1>
+          <p className="mt-1.5 text-[0.8125rem] leading-relaxed text-muted">
+            These are the real figures from the network, locked before you approve.
+          </p>
+
+          <dl className="mt-5 rounded-xl border border-line bg-surface-2 px-4 py-1.5">
+            <Row label="You send">
+              <Figure value={quote.display.debit} code={quote.debitAmount.assetCode} size="lg" />
+            </Row>
+            <Row label="Business B receives">
+              <Figure value={quote.display.receive} code={quote.receiveAmount.assetCode} size="lg" />
+            </Row>
+            <Row label="Exchange rate" divider>
+              <span className="tnum text-[0.8125rem] text-muted">
+                1 {quote.debitAmount.assetCode} = {quote.display.exchangeRate}{' '}
+                {quote.receiveAmount.assetCode}
+              </span>
+            </Row>
+            <Row label="Network fee">
+              <Figure value={quote.display.feeValue} code={quote.debitAmount.assetCode} tone="muted" />
+            </Row>
+          </dl>
+
+          <button onClick={confirmAndSend} disabled={loading} className={`${btnPrimary} mt-5`}>
+            {loading ? (
+              <>
+                <Spinner /> Redirecting to approve
+              </>
+            ) : (
+              <>
+                Confirm &amp; send
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              setStep('start')
+              setError(null)
+            }}
+            disabled={loading}
+            className={`${btnGhost} mt-1.5`}
+          >
+            Back
+          </button>
+        </div>
+      )}
+    </Shell>
+  )
+}
+
+// Inline loading spinner for button states. Pure CSS spin; respects reduced-motion
+// via the global rule that neutralizes transition/animation durations.
+function Spinner() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden className="animate-spin">
+      <circle cx="8" cy="8" r="6.25" stroke="currentColor" strokeWidth="1.75" className="opacity-25" />
+      <path d="M14.25 8A6.25 6.25 0 0 0 8 1.75" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
   )
 }
