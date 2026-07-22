@@ -2,16 +2,39 @@
 
 > What's built, what's not, what's in progress, known issues. Update at the end of every session.
 
-_Last updated: 2026-06-17 — ✅ FIRST LIVE END-TO-END RUN SUCCEEDED. Real USD→EUR payment settled on both wallets._
+_Last updated: 2026-07-21 — grant SUBMITTED (Jun 30), UI redesigned (Jul 2); live thread is now the CBCS intake (regulator), not code._
 
 ## Phase
 
-**Phase 3 — VERIFIED LIVE. 🎉** All 6 build parts done AND proven with a real run on the Interledger
+**Phase 3 — VERIFIED LIVE (Jun 17) → grant SUBMITTED (Jun 30) → UI redesigned (Jul 2).**
+The code POC is done, proven, and submitted. The live workstream is now **non-code and
+regulatory** (CBCS intake); the app itself needs nothing more to build.
+
+### What's happened since the live run (the June 17 detail below is still accurate history)
+
+- ✅ **Grant SUBMITTED — Jun 30 2026** (Open Payments Accelerator, before the 9 PM deadline).
+  $40,000 budget of the $60k ceiling, **no founder salary**. Repo made **PUBLIC**
+  (`github.com/siddvaswani/sxm-fintech`) and attached as supporting material. **Decision pending.**
+  ⚠️ Could not re-run a fresh LIVE settlement on the laptop at submission time — `.env`/`private.key`
+  are machine-local (on the mini); verified build + boot only. Code unchanged since the Jun 17 run.
+- ✅ **UI redesign — Jul 2 2026** (commit `b1b385c`): all three screens rebuilt in the
+  **"technical-precision (dark)"** direction from `PRODUCT.md` — deep ink surfaces, near-white ink,
+  one restrained teal accent, Geist Mono tabular figures. Replaces the default-Tailwind card look.
+- 🟡 **CBCS regulator thread is the live workstream.** After the Jun 30 meeting, CBCS asked for an
+  **8-part preliminary information submission** (a non-binding, risk-based intake — NOT a license
+  application). **Full draft written** and lives in the Google Doc *"CBCS Preliminary Assessment —
+  8-Part Intake Submission (DRAFT)"* (that Doc is the live version, not this repo). One decision
+  gates sending it: the founder ownership split (Sidd / Sahil), plus deleting the review-notes block.
+- ⏭️ **Bigger play (Path B):** become the licensed Caribbean-side XCG wallet under CBCS — see
+  AI-OS `projects/sxm-fintech/RESEARCH_CBCS_LICENSING.md`.
+
+### Original live-run detail (Jun 17 — unchanged history)
+
+All 6 build parts done AND proven with a real run on the Interledger
 test wallet (2026-06-17): Business A (USD) paid Business B (EUR), quote→approve→send→settle, money
 moved on both accounts. Test sent: B receives €10.00 → A pays $11.54 (rate 1 USD = 0.866551 EUR;
 cross-currency fee shown as 0.00 by design — cost is in the rate). The platform held no funds.
-**One real fix was needed to run live** (see Known issues). Remaining work is non-code: grant demo
-capture + writeup (grant app v1 already drafted by Sidd). `SETUP.md` is now OPTIONAL (Sidd did the
+**One real fix was needed to run live** (see Known issues). `SETUP.md` is OPTIONAL (Sidd did the
 wallet setup live with Claude instead of from a doc).
 
 ## What this project is
@@ -124,11 +147,15 @@ initiates/routes; the test wallets settle.
 
 ## ▶️ Pick up here (next action)
 
-**Code phase is DONE and proven.** Next is grant work (Sidd's, non-code): capture a demo
-recording/screenshots of the working USD→EUR flow, and finish the grant writeup (app v1 drafted).
-**Deadline: 2026-06-30** (Open Payments Accelerator). Optional code polish if time: the `hash`
-verification TODO in `app/callback/route.ts`; a dedicated 3rd "platform" wallet for the cleaner
-no-custody story (spec §7, 3-wallet).
+**Code phase is DONE, proven, and submitted.** The grant went in Jun 30 (decision pending).
+**The live next action is non-code:** finish and send the **CBCS 8-part preliminary intake** — the
+full draft is in the Google Doc (not this repo). Only blockers to send: (1) confirm the founder
+ownership split (Sidd / Sahil), (2) delete the review-notes block + the bracketed review line in
+item 5. See AI-OS `projects/sxm-fintech/STATUS.md` + `TASKS.md` for the live regulator thread.
+
+Optional code polish, only if it ever resumes: the `hash` verification TODO in
+`app/callback/route.ts`; a dedicated 3rd "platform" wallet for the cleaner no-custody story
+(spec §7, 3-wallet).
 
 _Resuming on another Mac:_ ALWAYS `git fetch --all` + `git pull --ff-only` on `main` FIRST (two-Mac
 repo, local drifts), run `npm install`. **Note: `.env` + `private.key` are gitignored and do NOT sync
